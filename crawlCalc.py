@@ -2,6 +2,8 @@ import random
 import statistics
 
 def main():
+    num_trials = 10000
+    
     weap1_base = 12
     weap1_slay = 7
     weap1_st_bonus = 0
@@ -20,7 +22,7 @@ def main():
     enemy_ac = 0
     
     dmg_list = []
-    for _ in range(10000):
+    for _ in range(num_trials):
         dmg =  final_damage(weap1_base, st + weap1_st_bonus,
                             wp_skill, ft_skill,
                             weap1_slay, enemy_ac,
@@ -32,7 +34,7 @@ def main():
 
     
     dmg_list = []
-    for _ in range(10000):
+    for _ in range(num_trials):
         dmg =  final_damage(weap2_base, st + weap2_st_bonus,
                             wp_skill, ft_skill,
                             weap2_slay, enemy_ac,
