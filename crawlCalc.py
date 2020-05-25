@@ -34,23 +34,6 @@ def main():
                 brand = 'electrocution')
     weapons.append(w2)
     
-    """
-
-    weapons.append({'name': 'antimagic spear',
-                    'base': 6,
-                    'slay': 5,
-                    'st_bonus': 4,
-                    'brand': 'none',
-                    'skill': 27})
-    
-    weapons.append({'name': 'antimagic trident',
-                    'base': 9,
-                    'slay': 0,
-                    'st_bonus': 0,
-                    'brand': 'none',
-                    'skill': 27})
-    """
-
     you = Player(strength = 31,
                  dex = 10,
                  extra_slay = 3,
