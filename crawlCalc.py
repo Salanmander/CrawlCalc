@@ -12,7 +12,7 @@ def main():
     print_histograms = True
     histogram_bins = 10
 
-    consider_to_hit = False
+    consider_to_hit = True
 
     weapons = []
 
@@ -33,6 +33,7 @@ def main():
                 st_bonus = 0,
                 brand = 'electrocution')
     weapons.append(w2)
+
     
     you = Player(strength = 31,
                  dex = 10,

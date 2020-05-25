@@ -13,9 +13,9 @@ class Monster:
     def get_hit(self, to_hit):
         # 2.5% chance each of auto hit or miss
         this_roll = random.random()
-        if(random.random() < 0.025):
+        if(this_roll < 0.025):
             return True
-        elif(random.random() < 0.05):
+        elif(this_roll < 0.05):
             return False
         
         
