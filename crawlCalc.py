@@ -1,27 +1,39 @@
-import random
+
 import statistics
+
+from player import Player
+from weapon import Weapon
+from monster import Monster
+
+from crawl_random import *
 
 def main():
     num_trials = 10000
     print_histograms = True
     histogram_bins = 10
 
-    weapons = []
-    
-    weapons.append({'name': 'trishula',
-                    'base': 13,
-                    'slay': 9,
-                    'st_bonus': 0,
-                    'brand': 'none',
-                    'skill': 17.9})
+    consider_to_hit = False
 
+    weapons = []
+
+    w1 = Weapon(dmg = 13,
+                acc = 0,
+                category = 'polearms',
+                name = 'trishula',
+                slay = 9,
+                st_bonus = 0,
+                brand = 'none')
+    weapons.append(w1)
+
+    w2 = Weapon(dmg = 12,
+                acc = 1,
+                category = 'polearms',
+                name = 'demon trident',
+                slay = 9,
+                st_bonus = 0,
+                brand = 'electrocution')
+    weapons.append(w2)
     
-    weapons.append({'name': 'demon trident',
-                    'base': 12,
-                    'slay': 9,
-                    'st_bonus': 0,
-                    'brand': 'electrocution',
-                    'skill': 17.9})
     """
 
     weapons.append({'name': 'antimagic spear',
@@ -39,28 +51,45 @@ def main():
                     'skill': 27})
     """
 
-    st = 31
-    dex = 10
-    ft_skill = 23.5
-    extra_slay = 3
+    you = Player(strength = 31,
+                 dex = 10,
+                 extra_slay = 3,
+                 size = 'medium')
 
-    enemy_ac = 0
+    you.set_skill('fighting', 23.8)
+    you.set_skill('polearms', 17)
+    you.set_skill('armour', 22)
+    you.set_skill('shields', 25)
 
+    enemy = Monster(ac = 0,
+                    ev = 0)
+
+    
     for weap in weapons:
-        dmg_list = []
+        result_list = []
         for _ in range(num_trials):
-            dmg =  final_damage(weap['base'], st + weap['st_bonus'],
-                                weap['skill'], ft_skill,
-                                weap['slay'] + extra_slay, enemy_ac,
-                                weap['brand'])
-            dmg_list.append(dmg)
-            
+
+            hit = True
+            if(consider_to_hit):
+                to_hit = you.get_to_hit(weap)
+                hit = enemy.get_hit(to_hit)
+
+            if(hit):
+                dmg = final_damage(weap, you, enemy)
+                result_list.append(dmg)
+            else:
+                result_list.append('miss')
+
+        # result_list consists of ints and 'miss'
+        # get dmg_list by turning all 'miss' into 0
+        dmg_list = [0 if x == 'miss' else x for x in result_list]
         dmg1 = statistics.mean(dmg_list)
 
-        print("\n\n" + weap['name'] + ": " + str(dmg1) + "\n")
+        print("\n\n" + weap.name + ": " + str(dmg1) + "\n")
+        #print(result_list)
         
         if print_histograms:
-            print_histogram(dmg_list, histogram_bins)
+            print_histogram(result_list, histogram_bins)
 
 
 # Prints the percentage of elements in the list that fall into each bin.
@@ -68,10 +97,20 @@ def main():
 # Total number of bins is given by num_bins, so size of non-zero bins is
 # max_val/(num_bins - 1)
 def print_histogram(values, num_bins):
-    values.sort()
     num_vals = len(values)
 
-    max_val = values[-1]
+    # count and remove misses
+    num_miss = values.count('miss')
+    hits = list(filter(lambda x: x != 'miss', values))
+
+    # print line for misses
+    percent_str = str(round(100*num_miss/num_vals, 2)) + "%"
+    print("   MISS: " + percent_str)
+    
+    
+    hits.sort()
+
+    max_val = hits[-1]
 
     bin_tops = get_integer_histogram_bins(max_val, num_bins)
 
@@ -89,11 +128,11 @@ def print_histogram(values, num_bins):
         num_in_bin = 0
         
         if i == num_bins-1:
-            num_in_bin = (num_vals) - curr_index
+            num_in_bin = (len(hits)) - curr_index
         else:
             # Find the beginning and end of the range
             bin_start_index = curr_index
-            while(values[curr_index] <= bin_max):
+            while(hits[curr_index] <= bin_max):
                 curr_index += 1
 
             num_in_bin = curr_index - bin_start_index
@@ -138,20 +177,23 @@ def get_integer_histogram_bins(max_val, num_bins):
 
  
 # Weapon damage after accounting for AC and brands
-def final_damage(base, st, wp_skill, ft_skill, slay, ac, brand = "none"):
-    damage = damage_roll(base, st, wp_skill, ft_skill, slay)
-    reduce = ac_roll(ac)
+def final_damage(weapon, player, enemy):
+    
+    damage = damage_roll(weapon, player)
+    reduce = enemy.ac_roll()
 
     damage_done = max(0, damage-reduce)
 
-    brand_damage = calc_brand_damage(damage_done, brand)
+    brand_damage = calc_brand_damage(damage_done, weapon.brand)
 
     return damage_done + brand_damage
+    
 
 
 # Weapon damage before AC
-def damage_roll(base, st, wp_skill, ft_skill, slay):
+def damage_roll(weapon, player):
 
+    st = player.strength
     # Calculate strength modifier
     str_mod = 39
     if st > 10:
@@ -160,15 +202,19 @@ def damage_roll(base, st, wp_skill, ft_skill, slay):
         str_mod -= 3*(roll(11-st))
     str_mod /= 39
 
+    wp_skill = player.get_weapon_skill(weapon)
+    ft_skill = player.get_skill('fighting')
+
     # Calculate skill modifiers
     wp_mod = (2500 + roll(100*wp_skill + 1))/2500
     ft_mod = (3000 + roll(100*ft_skill + 1))/3000
 
 
     # Roll damage
-    dmg = roll(base * str_mod + 1) -1
+    dmg = roll(weapon.dmg * str_mod + 1) -1
 
     # Roll slaying
+    slay = weapon.slay + player.extra_slay
     slay_bonus = roll(1+slay)
 
     # Apply modifiers
@@ -215,18 +261,6 @@ def calc_brand_damage(damage_done, brand):
         return 0
 
 
-def ac_roll(ac):
-    return roll(1+ac)
-
-
-# Equivalent to the random2() method in Crawl source random.cc
-# Returns uniformly distributed int in range [0, floor(top)-1]
-def roll(top):
-    if top <= 1:
-        return 0
-    
-    return random.randrange(int(top))
-    
 
 
 if __name__ == "__main__":
